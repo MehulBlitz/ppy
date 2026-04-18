@@ -82,7 +82,7 @@ DWORD __stdcall LoadDotNetBinary(void * pArg)
 
 	if (dot_net_data.size() < 6)
 	{
-		CONSOLE_LOG("Invalid info: %d arguments provided (6 expected)\n", (DWORD)dot_net_data.size());
+		CONSOLE_LOG("Invalid info: %d arguments provided (6 expected)\n", static_cast<int>(dot_net_data.size()));
 
 		Log(InfoPath, DNP_ERR_INVALID_DATA, NULL);
 

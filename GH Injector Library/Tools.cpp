@@ -221,7 +221,7 @@ DWORD ValidateDllFileInMemory(const BYTE * RawData, DWORD RawSize, DWORD target_
 bool GetOwnModulePathA(std::string & out)
 {
 	char buffer[MAX_PATH * 2]{ 0 };
-	DWORD mod_ret = GetModuleFileNameA(g_hInjMod, buffer, sizeof(buffer));
+	DWORD mod_ret = GetModuleFileNameA(g_hInjMod, buffer, static_cast<DWORD>(sizeof(buffer) / sizeof(buffer[0])));
 	if (!mod_ret || GetLastError() == ERROR_INSUFFICIENT_BUFFER)
 	{
 		return false;
@@ -250,7 +250,7 @@ bool GetOwnModulePathW(std::wstring & out)
 
 	std::wstring temp = buffer;
 	auto pos = temp.find_last_of('\\');
-	if (pos == std::string::npos)
+	if (pos == std::wstring::npos)
 	{
 		return false;
 	}
