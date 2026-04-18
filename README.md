@@ -145,6 +145,39 @@ InjectA(&data);
 
 ```
 
+### Mini GUI Sample App (In This Repo)
+
+This solution now contains a minimal GUI host project named GH Injector CLI.
+It opens a window, resolves PID by process name, and performs a basic InjectW call.
+
+Build output name:
+
+- GH Injector CLI - x64.exe (or x86)
+
+Usage:
+
+```powershell
+1) Select a process from the dropdown (or type a process name)
+2) Click "Refresh" to reload the live process list when needed
+3) Click "Find PID"
+4) Select payload DLL
+5) Click "Inject"
+```
+
+Example:
+
+```powershell
+Process Name: notepad.exe
+DLL Path: C:\Tools\MyPayload.dll
+Init Timeout: 180000
+```
+
+Notes:
+
+- Run the app from a directory that also contains GH Injector - x64.dll.
+- Use an x64 CLI build with x64 targets and an x86 CLI build with x86 targets.
+- Run as Administrator if the target process is elevated.
+
 ---
 
 ### What is a DLL Injector?​

@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GH Injector SM", "GH Inject
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GH Injector DNP", "GH Injector DNP\GH Injector DNP.vcxproj", "{F49CAF48-9A1B-438C-A06B-E90A0736392A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GH Injector CLI", "GH Injector CLI\GH Injector CLI.vcxproj", "{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{F49CAF48-9A1B-438C-A06B-E90A0736392A}.Release|x64.Build.0 = Release|x64
 		{F49CAF48-9A1B-438C-A06B-E90A0736392A}.Release|x86.ActiveCfg = Release|Win32
 		{F49CAF48-9A1B-438C-A06B-E90A0736392A}.Release|x86.Build.0 = Release|Win32
+		{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}.Debug|x64.ActiveCfg = Debug|x64
+		{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}.Debug|x64.Build.0 = Debug|x64
+		{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}.Debug|x86.ActiveCfg = Debug|Win32
+		{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}.Debug|x86.Build.0 = Debug|Win32
+		{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}.Release|x64.ActiveCfg = Release|x64
+		{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}.Release|x64.Build.0 = Release|x64
+		{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}.Release|x86.ActiveCfg = Release|Win32
+		{A4EEA806-6D43-4ACD-BEFA-A4F1F32F03A8}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
