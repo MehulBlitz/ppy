@@ -27,6 +27,8 @@ namespace
 	constexpr DWORD INJ_ERR_SUCCESS = 0x00000000;
 	constexpr DWORD INJ_ERR_SYMBOL_INIT_NOT_DONE = 0x0000001C;
 	constexpr DWORD INJ_ERR_IMPORT_HANDLER_NOT_DONE = 0x00000037;
+	constexpr DWORD INJ_MM_MAP_FROM_MEMORY_FLAG = 0x04000000;
+	constexpr DWORD INJ_MM_LINK_MODULE_FLAG = 0x08000000;
 
 	constexpr DWORD DEFAULT_INIT_TIMEOUT_MS = 180000;
 	constexpr DWORD DEFAULT_INJECTION_TIMEOUT_MS = 2000;
@@ -616,8 +618,8 @@ namespace
 		if (IsChecked(state.hCheckMmRunDllMain)) flags |= INJ_MM_RUN_DLL_MAIN;
 		if (IsChecked(state.hCheckMmLdrLock)) flags |= INJ_MM_RUN_UNDER_LDR_LOCK;
 		if (IsChecked(state.hCheckMmShiftBase)) flags |= INJ_MM_SHIFT_MODULE_BASE;
-		if (IsChecked(state.hCheckMmMapMemory)) flags |= INJ_MM_MAP_FROM_MEMORY;
-		if (IsChecked(state.hCheckMmLinkPeb)) flags |= INJ_MM_LINK_MODULE;
+		if (IsChecked(state.hCheckMmMapMemory)) flags |= INJ_MM_MAP_FROM_MEMORY_FLAG;
+		if (IsChecked(state.hCheckMmLinkPeb)) flags |= INJ_MM_LINK_MODULE_FLAG;
 
 		return flags;
 	}
