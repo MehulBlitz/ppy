@@ -145,6 +145,56 @@ InjectA(&data);
 
 ```
 
+### Build And Run From GitHub Actions
+
+This repository includes a Windows CI workflow at `.github/workflows/windows-msbuild.yml`.
+It builds `Release|x64` and `Release|x86` and uploads two artifacts:
+
+- `injector-x64-Release`
+- `injector-x86-Release`
+
+#### 1. Trigger a build
+
+- Push to `master`, open a PR to `master`, or run the workflow manually in the Actions tab.
+
+#### 2. Download both artifacts
+
+- Download and extract both artifacts into a single local folder for testing.
+
+#### 3. Keep required runtime files together
+
+When running the injector DLL, keep these files in the same directory:
+
+- `GH Injector - x64.dll` (or x86 variant when using x86 host app)
+- `GH Injector SM - x64.exe`
+- `GH Injector SM - x86.exe`
+- `GH Injector DNP - x64.dll`
+- `GH Injector DNP - x86.dll`
+- `Injection.h` (for your host project include path)
+
+Recommended layout:
+
+```text
+YourAppFolder/
+	YourApp.exe
+	GH Injector - x64.dll
+	GH Injector SM - x64.exe
+	GH Injector SM - x86.exe
+	GH Injector DNP - x64.dll
+	GH Injector DNP - x86.dll
+```
+
+#### 4. First run initialization
+
+- Call `StartDownload()` once and wait until symbol/import initialization is complete:
+	- `GetSymbolState() == 0`
+	- `GetImportState() == 0`
+
+#### 5. Common runtime error
+
+- `0x00000047` means `GH Injector SM - x86.exe` is missing.
+	- Ensure `GH Injector SM - x86.exe` is in the same folder as `GH Injector - x64.dll`.
+
 ### Mini GUI Sample App (In This Repo)
 
 This solution now contains a minimal GUI host project named GH Injector CLI.

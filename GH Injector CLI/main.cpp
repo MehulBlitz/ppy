@@ -44,6 +44,36 @@ namespace
 	constexpr int ID_EDIT_TIMEOUT = 1007;
 	constexpr int ID_BUTTON_INJECT = 1008;
 	constexpr int ID_STATIC_STATUS = 1009;
+	constexpr int ID_EDIT_INIT_TIMEOUT = 1010;
+	constexpr int ID_EDIT_DELAY = 1011;
+	constexpr int ID_COMBO_MODE = 1012;
+	constexpr int ID_COMBO_METHOD = 1013;
+	constexpr int ID_COMBO_HEADER = 1014;
+	constexpr int ID_CHECK_GENERATE_LOG = 1015;
+	constexpr int ID_CHECK_AUTO_EXIT = 1016;
+	constexpr int ID_CHECK_HIJACK_HANDLE = 1017;
+	constexpr int ID_CHECK_CLOAK_THREAD = 1018;
+	constexpr int ID_CHECK_RANDOM_DLL_NAME = 1019;
+	constexpr int ID_CHECK_LOAD_DLL_COPY = 1020;
+	constexpr int ID_CHECK_UNLINK_PEB = 1021;
+	constexpr int ID_CHECK_MM_RUN_DLLMAIN = 1022;
+	constexpr int ID_CHECK_MM_LDR_LOCK = 1023;
+	constexpr int ID_CHECK_MM_RESOLVE_IMPORTS = 1024;
+	constexpr int ID_CHECK_MM_DELAY_IMPORTS = 1025;
+	constexpr int ID_CHECK_MM_EXECUTE_TLS = 1026;
+	constexpr int ID_CHECK_MM_MAP_MEMORY = 1027;
+	constexpr int ID_CHECK_MM_SET_PAGE_PROT = 1028;
+	constexpr int ID_CHECK_MM_ENABLE_EX = 1029;
+	constexpr int ID_CHECK_MM_INIT_COOKIE = 1030;
+	constexpr int ID_CHECK_MM_CLEAN_DIR = 1031;
+	constexpr int ID_CHECK_MM_SHIFT_BASE = 1032;
+	constexpr int ID_CHECK_MM_LINK_PEB = 1033;
+
+	struct ComboOption
+	{
+		const wchar_t * Label;
+		DWORD Value;
+	};
 
 	struct AppState
 	{
@@ -51,12 +81,71 @@ namespace
 		HWND hEditPid = nullptr;
 		HWND hEditDllPath = nullptr;
 		HWND hEditTimeout = nullptr;
+		HWND hEditInitTimeout = nullptr;
+		HWND hEditDelay = nullptr;
 		HWND hButtonRefresh = nullptr;
 		HWND hButtonFindPid = nullptr;
 		HWND hButtonBrowse = nullptr;
 		HWND hButtonInject = nullptr;
 		HWND hStaticStatus = nullptr;
+		HWND hComboMode = nullptr;
+		HWND hComboMethod = nullptr;
+		HWND hComboHeader = nullptr;
+		HWND hCheckGenerateLog = nullptr;
+		HWND hCheckAutoExit = nullptr;
+		HWND hCheckHijackHandle = nullptr;
+		HWND hCheckCloakThread = nullptr;
+		HWND hCheckRandomDllName = nullptr;
+		HWND hCheckLoadDllCopy = nullptr;
+		HWND hCheckUnlinkPeb = nullptr;
+		HWND hCheckMmRunDllMain = nullptr;
+		HWND hCheckMmLdrLock = nullptr;
+		HWND hCheckMmResolveImports = nullptr;
+		HWND hCheckMmDelayImports = nullptr;
+		HWND hCheckMmExecuteTls = nullptr;
+		HWND hCheckMmMapMemory = nullptr;
+		HWND hCheckMmSetPageProt = nullptr;
+		HWND hCheckMmEnableEx = nullptr;
+		HWND hCheckMmInitCookie = nullptr;
+		HWND hCheckMmCleanDir = nullptr;
+		HWND hCheckMmShiftBase = nullptr;
+		HWND hCheckMmLinkPeb = nullptr;
 		bool Busy = false;
+	};
+
+	struct InjectionSettings
+	{
+		DWORD InitTimeoutMs = DEFAULT_INIT_TIMEOUT_MS;
+		DWORD DelayMs = 0;
+		DWORD InjectTimeoutMs = DEFAULT_INJECTION_TIMEOUT_MS;
+		INJECTION_MODE Mode = INJECTION_MODE::IM_LoadLibraryExW;
+		LAUNCH_METHOD Method = LAUNCH_METHOD::LM_NtCreateThreadEx;
+		DWORD Flags = 0;
+		bool GenerateErrorLog = true;
+		bool AutoExit = false;
+	};
+
+	constexpr ComboOption MODE_OPTIONS[] = {
+		{ L"LoadLibraryExW", static_cast<DWORD>(INJECTION_MODE::IM_LoadLibraryExW) },
+		{ L"LdrLoadDll", static_cast<DWORD>(INJECTION_MODE::IM_LdrLoadDll) },
+		{ L"LdrpLoadDll", static_cast<DWORD>(INJECTION_MODE::IM_LdrpLoadDll) },
+		{ L"LdrpLoadDllInternal", static_cast<DWORD>(INJECTION_MODE::IM_LdrpLoadDllInternal) },
+		{ L"ManualMap", static_cast<DWORD>(INJECTION_MODE::IM_ManualMap) },
+	};
+
+	constexpr ComboOption METHOD_OPTIONS[] = {
+		{ L"NtCreateThreadEx", static_cast<DWORD>(LAUNCH_METHOD::LM_NtCreateThreadEx) },
+		{ L"ThreadHijack", static_cast<DWORD>(LAUNCH_METHOD::LM_HijackThread) },
+		{ L"SetWindowsHookEx", static_cast<DWORD>(LAUNCH_METHOD::LM_SetWindowsHookEx) },
+		{ L"QueueUserAPC", static_cast<DWORD>(LAUNCH_METHOD::LM_QueueUserAPC) },
+		{ L"KernelCallback", static_cast<DWORD>(LAUNCH_METHOD::LM_KernelCallback) },
+		{ L"FakeVEH", static_cast<DWORD>(LAUNCH_METHOD::LM_FakeVEH) },
+	};
+
+	constexpr ComboOption HEADER_OPTIONS[] = {
+		{ L"Keep PE Header", 0 },
+		{ L"Fake Header", INJ_FAKE_HEADER },
+		{ L"Erase Header", INJ_ERASE_HEADER },
 	};
 
 	struct ProcessInfo
@@ -334,11 +423,119 @@ namespace
 
 	void EnableActionButtons(AppState & state, bool enabled)
 	{
+		const BOOL flag = enabled ? TRUE : FALSE;
 		EnableWindow(state.hComboProcess, enabled ? TRUE : FALSE);
-		EnableWindow(state.hButtonRefresh, enabled ? TRUE : FALSE);
-		EnableWindow(state.hButtonFindPid, enabled ? TRUE : FALSE);
-		EnableWindow(state.hButtonBrowse, enabled ? TRUE : FALSE);
-		EnableWindow(state.hButtonInject, enabled ? TRUE : FALSE);
+		EnableWindow(state.hButtonRefresh, flag);
+		EnableWindow(state.hButtonFindPid, flag);
+		EnableWindow(state.hButtonBrowse, flag);
+		EnableWindow(state.hButtonInject, flag);
+		EnableWindow(state.hEditInitTimeout, flag);
+		EnableWindow(state.hEditDelay, flag);
+		EnableWindow(state.hEditTimeout, flag);
+		EnableWindow(state.hComboMode, flag);
+		EnableWindow(state.hComboMethod, flag);
+		EnableWindow(state.hComboHeader, flag);
+		EnableWindow(state.hCheckGenerateLog, flag);
+		EnableWindow(state.hCheckAutoExit, flag);
+		EnableWindow(state.hCheckHijackHandle, flag);
+		EnableWindow(state.hCheckCloakThread, flag);
+		EnableWindow(state.hCheckRandomDllName, flag);
+		EnableWindow(state.hCheckLoadDllCopy, flag);
+		EnableWindow(state.hCheckUnlinkPeb, flag);
+		EnableWindow(state.hCheckMmRunDllMain, flag);
+		EnableWindow(state.hCheckMmLdrLock, flag);
+		EnableWindow(state.hCheckMmResolveImports, flag);
+		EnableWindow(state.hCheckMmDelayImports, flag);
+		EnableWindow(state.hCheckMmExecuteTls, flag);
+		EnableWindow(state.hCheckMmMapMemory, flag);
+		EnableWindow(state.hCheckMmSetPageProt, flag);
+		EnableWindow(state.hCheckMmEnableEx, flag);
+		EnableWindow(state.hCheckMmInitCookie, flag);
+		EnableWindow(state.hCheckMmCleanDir, flag);
+		EnableWindow(state.hCheckMmShiftBase, flag);
+		EnableWindow(state.hCheckMmLinkPeb, flag);
+	}
+
+	int AddComboItem(HWND hCombo, const wchar_t * text, DWORD value)
+	{
+		const int index = static_cast<int>(SendMessageW(hCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(text)));
+		if (index == CB_ERR || index == CB_ERRSPACE)
+		{
+			return CB_ERR;
+		}
+
+		SendMessageW(hCombo, CB_SETITEMDATA, static_cast<WPARAM>(index), static_cast<LPARAM>(value));
+		return index;
+	}
+
+	void InitComboOptions(HWND hCombo, const ComboOption * options, size_t count, DWORD defaultValue)
+	{
+		int defaultIndex = 0;
+		for (size_t i = 0; i < count; ++i)
+		{
+			const int index = AddComboItem(hCombo, options[i].Label, options[i].Value);
+			if (index != CB_ERR && options[i].Value == defaultValue)
+			{
+				defaultIndex = index;
+			}
+		}
+
+		SendMessageW(hCombo, CB_SETCURSEL, static_cast<WPARAM>(defaultIndex), 0);
+	}
+
+	DWORD GetSelectedComboValue(HWND hCombo, DWORD fallback)
+	{
+		const int index = static_cast<int>(SendMessageW(hCombo, CB_GETCURSEL, 0, 0));
+		if (index == CB_ERR)
+		{
+			return fallback;
+		}
+
+		const LRESULT value = SendMessageW(hCombo, CB_GETITEMDATA, static_cast<WPARAM>(index), 0);
+		if (value == CB_ERR)
+		{
+			return fallback;
+		}
+
+		return static_cast<DWORD>(value);
+	}
+
+	bool IsChecked(HWND hCheck)
+	{
+		return SendMessageW(hCheck, BM_GETCHECK, 0, 0) == BST_CHECKED;
+	}
+
+	void SetChecked(HWND hCheck, bool checked)
+	{
+		SendMessageW(hCheck, BM_SETCHECK, checked ? BST_CHECKED : BST_UNCHECKED, 0);
+	}
+
+	DWORD BuildFlagsFromUi(const AppState & state)
+	{
+		DWORD flags = 0;
+
+		flags |= GetSelectedComboValue(state.hComboHeader, 0);
+
+		if (IsChecked(state.hCheckUnlinkPeb)) flags |= INJ_UNLINK_FROM_PEB;
+		if (IsChecked(state.hCheckCloakThread)) flags |= INJ_THREAD_CREATE_CLOAKED;
+		if (IsChecked(state.hCheckRandomDllName)) flags |= INJ_SCRAMBLE_DLL_NAME;
+		if (IsChecked(state.hCheckLoadDllCopy)) flags |= INJ_LOAD_DLL_COPY;
+		if (IsChecked(state.hCheckHijackHandle)) flags |= INJ_HIJACK_HANDLE;
+
+		if (IsChecked(state.hCheckMmCleanDir)) flags |= INJ_MM_CLEAN_DATA_DIR;
+		if (IsChecked(state.hCheckMmResolveImports)) flags |= INJ_MM_RESOLVE_IMPORTS;
+		if (IsChecked(state.hCheckMmDelayImports)) flags |= INJ_MM_RESOLVE_DELAY_IMPORTS;
+		if (IsChecked(state.hCheckMmExecuteTls)) flags |= INJ_MM_EXECUTE_TLS;
+		if (IsChecked(state.hCheckMmEnableEx)) flags |= INJ_MM_ENABLE_EXCEPTIONS;
+		if (IsChecked(state.hCheckMmSetPageProt)) flags |= INJ_MM_SET_PAGE_PROTECTIONS;
+		if (IsChecked(state.hCheckMmInitCookie)) flags |= INJ_MM_INIT_SECURITY_COOKIE;
+		if (IsChecked(state.hCheckMmRunDllMain)) flags |= INJ_MM_RUN_DLL_MAIN;
+		if (IsChecked(state.hCheckMmLdrLock)) flags |= INJ_MM_RUN_UNDER_LDR_LOCK;
+		if (IsChecked(state.hCheckMmShiftBase)) flags |= INJ_MM_SHIFT_MODULE_BASE;
+		if (IsChecked(state.hCheckMmMapMemory)) flags |= INJ_MM_MAP_FROM_MEMORY;
+		if (IsChecked(state.hCheckMmLinkPeb)) flags |= INJ_MM_LINK_MODULE;
+
+		return flags;
 	}
 
 	bool WaitForProgress(
@@ -411,9 +608,9 @@ namespace
 		const std::wstring processName,
 		const DWORD preferredPid,
 		const std::wstring dllPath,
-		const DWORD initTimeoutMs)
+		const InjectionSettings settings)
 	{
-		std::thread([hWnd, processName, preferredPid, dllPath, initTimeoutMs]()
+		std::thread([hWnd, processName, preferredPid, dllPath, settings]()
 		{
 			DWORD resultCode = 0;
 			DWORD pid = preferredPid;
@@ -477,7 +674,7 @@ namespace
 
 			if (GetDownloadProgressEx)
 			{
-				if (!WaitForProgress(hWnd, GetDownloadProgressEx, PDB_DOWNLOAD_INDEX_NTDLL, false, initTimeoutMs, L"native ntdll symbols"))
+				if (!WaitForProgress(hWnd, GetDownloadProgressEx, PDB_DOWNLOAD_INDEX_NTDLL, false, settings.InitTimeoutMs, L"native ntdll symbols"))
 				{
 					resultCode = WAIT_TIMEOUT;
 					FreeLibrary(hInjection);
@@ -486,7 +683,7 @@ namespace
 				}
 
 #ifdef _WIN64
-				if (!WaitForProgress(hWnd, GetDownloadProgressEx, PDB_DOWNLOAD_INDEX_NTDLL, true, initTimeoutMs, L"wow64 ntdll symbols"))
+				if (!WaitForProgress(hWnd, GetDownloadProgressEx, PDB_DOWNLOAD_INDEX_NTDLL, true, settings.InitTimeoutMs, L"wow64 ntdll symbols"))
 				{
 					resultCode = WAIT_TIMEOUT;
 					FreeLibrary(hInjection);
@@ -497,7 +694,7 @@ namespace
 			}
 
 			DWORD state = 0;
-			if (!WaitForState(hWnd, L"symbol initialization", INJ_ERR_SYMBOL_INIT_NOT_DONE, initTimeoutMs, GetSymbolState, state))
+			if (!WaitForState(hWnd, L"symbol initialization", INJ_ERR_SYMBOL_INIT_NOT_DONE, settings.InitTimeoutMs, GetSymbolState, state))
 			{
 				resultCode = state;
 				FreeLibrary(hInjection);
@@ -505,23 +702,29 @@ namespace
 				return;
 			}
 
-			if (!WaitForState(hWnd, L"import initialization", INJ_ERR_IMPORT_HANDLER_NOT_DONE, initTimeoutMs, GetImportState, state))
+			if (!WaitForState(hWnd, L"import initialization", INJ_ERR_IMPORT_HANDLER_NOT_DONE, settings.InitTimeoutMs, GetImportState, state))
 			{
 				resultCode = state;
 				FreeLibrary(hInjection);
 				PostMessageW(hWnd, WM_APP_INJECT_DONE, FALSE, static_cast<LPARAM>(resultCode));
 				return;
+			}
+
+			if (settings.DelayMs != 0)
+			{
+				PostStatus(hWnd, L"Delay before injection...");
+				Sleep(settings.DelayMs);
 			}
 
 			INJECTIONDATAW data{};
 			wcsncpy_s(data.szDllPath, dllPath.c_str(), _TRUNCATE);
 			data.ProcessID = pid;
-			data.Mode = INJECTION_MODE::IM_LoadLibraryExW;
-			data.Method = LAUNCH_METHOD::LM_NtCreateThreadEx;
-			data.Flags = 0;
-			data.Timeout = DEFAULT_INJECTION_TIMEOUT_MS;
+			data.Mode = settings.Mode;
+			data.Method = settings.Method;
+			data.Flags = settings.Flags;
+			data.Timeout = settings.InjectTimeoutMs;
 			data.hHandleValue = 0;
-			data.GenerateErrorLog = true;
+			data.GenerateErrorLog = settings.GenerateErrorLog;
 
 			PostStatus(hWnd, L"Injecting...");
 			resultCode = InjectW(&data);
@@ -577,6 +780,17 @@ namespace
 		CreateWindowExW(0, L"STATIC", L"PID:", WS_CHILD | WS_VISIBLE,
 			16, 54, 110, 22, hWnd, nullptr, nullptr, nullptr);
 
+		CreateWindowExW(0, L"STATIC", L"Architecture:", WS_CHILD | WS_VISIBLE,
+			280, 54, 90, 22, hWnd, nullptr, nullptr, nullptr);
+
+#ifdef _WIN64
+		CreateWindowExW(0, L"STATIC", L"x64", WS_CHILD | WS_VISIBLE,
+			374, 54, 40, 22, hWnd, nullptr, nullptr, nullptr);
+#else
+		CreateWindowExW(0, L"STATIC", L"x86", WS_CHILD | WS_VISIBLE,
+			374, 54, 40, 22, hWnd, nullptr, nullptr, nullptr);
+#endif
+
 		state.hEditPid = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"",
 			WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_READONLY,
 			128, 52, 130, 24, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_EDIT_PID)), nullptr, nullptr);
@@ -595,19 +809,148 @@ namespace
 		CreateWindowExW(0, L"STATIC", L"Init Timeout (ms):", WS_CHILD | WS_VISIBLE,
 			16, 126, 110, 22, hWnd, nullptr, nullptr, nullptr);
 
+		state.hEditInitTimeout = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"180000",
+			WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
+			128, 124, 110, 24, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_EDIT_INIT_TIMEOUT)), nullptr, nullptr);
+
+		CreateWindowExW(0, L"STATIC", L"Delay (ms):", WS_CHILD | WS_VISIBLE,
+			250, 126, 80, 22, hWnd, nullptr, nullptr, nullptr);
+
+		state.hEditDelay = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"0",
+			WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
+			334, 124, 72, 24, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_EDIT_DELAY)), nullptr, nullptr);
+
+		CreateWindowExW(0, L"STATIC", L"Timeout (ms):", WS_CHILD | WS_VISIBLE,
+			420, 126, 90, 22, hWnd, nullptr, nullptr, nullptr);
+
 		state.hEditTimeout = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"180000",
 			WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
-			128, 124, 110, 24, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_EDIT_TIMEOUT)), nullptr, nullptr);
+			514, 124, 96, 24, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_EDIT_TIMEOUT)), nullptr, nullptr);
 
 		state.hButtonInject = CreateWindowExW(0, L"BUTTON", L"Inject",
 			WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-			544, 122, 80, 28, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_BUTTON_INJECT)), nullptr, nullptr);
+			620, 122, 80, 28, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_BUTTON_INJECT)), nullptr, nullptr);
+
+		state.hCheckGenerateLog = CreateWindowExW(0, L"BUTTON", L"Generate error log",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			16, 156, 180, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_GENERATE_LOG)), nullptr, nullptr);
+
+		state.hCheckAutoExit = CreateWindowExW(0, L"BUTTON", L"Auto exit",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			210, 156, 120, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_AUTO_EXIT)), nullptr, nullptr);
+
+		CreateWindowExW(0, L"STATIC", L"Injection Mode:", WS_CHILD | WS_VISIBLE,
+			16, 188, 110, 22, hWnd, nullptr, nullptr, nullptr);
+
+		state.hComboMode = CreateWindowExW(WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
+			WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST,
+			128, 186, 190, 180, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_COMBO_MODE)), nullptr, nullptr);
+
+		CreateWindowExW(0, L"STATIC", L"Launch Method:", WS_CHILD | WS_VISIBLE,
+			336, 188, 100, 22, hWnd, nullptr, nullptr, nullptr);
+
+		state.hComboMethod = CreateWindowExW(WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
+			WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST,
+			438, 186, 190, 180, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_COMBO_METHOD)), nullptr, nullptr);
+
+		CreateWindowExW(0, L"STATIC", L"PE Header:", WS_CHILD | WS_VISIBLE,
+			646, 188, 80, 22, hWnd, nullptr, nullptr, nullptr);
+
+		state.hComboHeader = CreateWindowExW(WS_EX_CLIENTEDGE, L"COMBOBOX", L"",
+			WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_DROPDOWNLIST,
+			726, 186, 170, 180, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_COMBO_HEADER)), nullptr, nullptr);
+
+		state.hCheckHijackHandle = CreateWindowExW(0, L"BUTTON", L"Hijack handle",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			16, 218, 150, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_HIJACK_HANDLE)), nullptr, nullptr);
+
+		state.hCheckCloakThread = CreateWindowExW(0, L"BUTTON", L"Cloak thread",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			190, 218, 130, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_CLOAK_THREAD)), nullptr, nullptr);
+
+		state.hCheckRandomDllName = CreateWindowExW(0, L"BUTTON", L"Random file name",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			336, 218, 150, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_RANDOM_DLL_NAME)), nullptr, nullptr);
+
+		state.hCheckLoadDllCopy = CreateWindowExW(0, L"BUTTON", L"Load DLL copy",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			504, 218, 140, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_LOAD_DLL_COPY)), nullptr, nullptr);
+
+		state.hCheckUnlinkPeb = CreateWindowExW(0, L"BUTTON", L"Unlink from PEB",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			662, 218, 140, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_UNLINK_PEB)), nullptr, nullptr);
+
+		CreateWindowExW(0, L"STATIC", L"Manual Map Options:", WS_CHILD | WS_VISIBLE,
+			16, 248, 180, 22, hWnd, nullptr, nullptr, nullptr);
+
+		state.hCheckMmRunDllMain = CreateWindowExW(0, L"BUTTON", L"Run DllMain",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			16, 274, 150, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_RUN_DLLMAIN)), nullptr, nullptr);
+
+		state.hCheckMmLdrLock = CreateWindowExW(0, L"BUTTON", L"Lock loader lock",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			190, 274, 150, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_LDR_LOCK)), nullptr, nullptr);
+
+		state.hCheckMmResolveImports = CreateWindowExW(0, L"BUTTON", L"Resolve imports",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			364, 274, 150, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_RESOLVE_IMPORTS)), nullptr, nullptr);
+
+		state.hCheckMmDelayImports = CreateWindowExW(0, L"BUTTON", L"Resolve delay imports",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			538, 274, 170, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_DELAY_IMPORTS)), nullptr, nullptr);
+
+		state.hCheckMmExecuteTls = CreateWindowExW(0, L"BUTTON", L"Execute TLS",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			732, 274, 130, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_EXECUTE_TLS)), nullptr, nullptr);
+
+		state.hCheckMmMapMemory = CreateWindowExW(0, L"BUTTON", L"Load from memory",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			16, 300, 150, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_MAP_MEMORY)), nullptr, nullptr);
+
+		state.hCheckMmSetPageProt = CreateWindowExW(0, L"BUTTON", L"Set page protections",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			190, 300, 170, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_SET_PAGE_PROT)), nullptr, nullptr);
+
+		state.hCheckMmEnableEx = CreateWindowExW(0, L"BUTTON", L"Enable exceptions",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			364, 300, 150, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_ENABLE_EX)), nullptr, nullptr);
+
+		state.hCheckMmInitCookie = CreateWindowExW(0, L"BUTTON", L"Initialize security cookie",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			538, 300, 194, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_INIT_COOKIE)), nullptr, nullptr);
+
+		state.hCheckMmCleanDir = CreateWindowExW(0, L"BUTTON", L"Clean data directories",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			732, 300, 164, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_CLEAN_DIR)), nullptr, nullptr);
+
+		state.hCheckMmShiftBase = CreateWindowExW(0, L"BUTTON", L"Shift module base",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			16, 326, 150, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_SHIFT_BASE)), nullptr, nullptr);
+
+		state.hCheckMmLinkPeb = CreateWindowExW(0, L"BUTTON", L"Link to PEB",
+			WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX,
+			190, 326, 120, 22, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_CHECK_MM_LINK_PEB)), nullptr, nullptr);
 
 		CreateWindowExW(0, L"STATIC", L"Status:", WS_CHILD | WS_VISIBLE,
 			16, 166, 110, 22, hWnd, nullptr, nullptr, nullptr);
 
 		state.hStaticStatus = CreateWindowExW(0, L"STATIC", L"Idle.", WS_CHILD | WS_VISIBLE,
-			128, 166, 496, 48, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_STATIC_STATUS)), nullptr, nullptr);
+			128, 356, 768, 48, hWnd, reinterpret_cast<HMENU>(static_cast<INT_PTR>(ID_STATIC_STATUS)), nullptr, nullptr);
+
+		InitComboOptions(state.hComboMode, MODE_OPTIONS, sizeof(MODE_OPTIONS) / sizeof(MODE_OPTIONS[0]), static_cast<DWORD>(INJECTION_MODE::IM_ManualMap));
+		InitComboOptions(state.hComboMethod, METHOD_OPTIONS, sizeof(METHOD_OPTIONS) / sizeof(METHOD_OPTIONS[0]), static_cast<DWORD>(LAUNCH_METHOD::LM_FakeVEH));
+		InitComboOptions(state.hComboHeader, HEADER_OPTIONS, sizeof(HEADER_OPTIONS) / sizeof(HEADER_OPTIONS[0]), 0);
+
+		SetChecked(state.hCheckGenerateLog, true);
+		SetChecked(state.hCheckAutoExit, false);
+		SetChecked(state.hCheckMmRunDllMain, true);
+		SetChecked(state.hCheckMmLdrLock, true);
+		SetChecked(state.hCheckMmResolveImports, true);
+		SetChecked(state.hCheckMmDelayImports, true);
+		SetChecked(state.hCheckMmExecuteTls, true);
+		SetChecked(state.hCheckMmSetPageProt, true);
+		SetChecked(state.hCheckMmEnableEx, true);
+		SetChecked(state.hCheckMmInitCookie, true);
 
 		RefreshProcessCombo(state);
 	}
@@ -681,6 +1024,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			const std::wstring process = GetWindowTextString(state->hComboProcess);
 			const DWORD selectedPid = GetSelectedComboPid(state->hComboProcess);
 			const std::wstring dllPath = GetWindowTextString(state->hEditDllPath);
+			const std::wstring initTimeoutText = GetWindowTextString(state->hEditInitTimeout);
+			const std::wstring delayText = GetWindowTextString(state->hEditDelay);
 			const std::wstring timeoutText = GetWindowTextString(state->hEditTimeout);
 
 			if (process.empty() && selectedPid == 0)
@@ -695,23 +1040,47 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 				return 0;
 			}
 
-			DWORD timeoutMs = 0;
-			if (!ParseDword(timeoutText, timeoutMs))
+			InjectionSettings settings{};
+
+			if (!ParseDword(initTimeoutText, settings.InitTimeoutMs))
 			{
 				MessageBoxW(hWnd, L"Init timeout must be a valid unsigned number.", WINDOW_TITLE, MB_ICONWARNING | MB_OK);
 				return 0;
 			}
 
-			if (timeoutMs == 0)
+			if (!ParseDword(delayText, settings.DelayMs))
 			{
-				timeoutMs = DEFAULT_INIT_TIMEOUT_MS;
+				MessageBoxW(hWnd, L"Delay must be a valid unsigned number.", WINDOW_TITLE, MB_ICONWARNING | MB_OK);
+				return 0;
 			}
+
+			if (!ParseDword(timeoutText, settings.InjectTimeoutMs))
+			{
+				MessageBoxW(hWnd, L"Injection timeout must be a valid unsigned number.", WINDOW_TITLE, MB_ICONWARNING | MB_OK);
+				return 0;
+			}
+
+			if (settings.InitTimeoutMs == 0)
+			{
+				settings.InitTimeoutMs = DEFAULT_INIT_TIMEOUT_MS;
+			}
+
+			if (settings.InjectTimeoutMs == 0)
+			{
+				settings.InjectTimeoutMs = DEFAULT_INJECTION_TIMEOUT_MS;
+			}
+
+			settings.Mode = static_cast<INJECTION_MODE>(GetSelectedComboValue(state->hComboMode, static_cast<DWORD>(INJECTION_MODE::IM_LoadLibraryExW)));
+			settings.Method = static_cast<LAUNCH_METHOD>(GetSelectedComboValue(state->hComboMethod, static_cast<DWORD>(LAUNCH_METHOD::LM_NtCreateThreadEx)));
+			settings.Flags = BuildFlagsFromUi(*state);
+			settings.GenerateErrorLog = IsChecked(state->hCheckGenerateLog);
+			settings.AutoExit = IsChecked(state->hCheckAutoExit);
 
 			state->Busy = true;
 			EnableActionButtons(*state, false);
 			SetStatusText(state->hStaticStatus, L"Starting...");
 
-			StartInjectionWorker(hWnd, process, selectedPid, dllPath, timeoutMs);
+			StartInjectionWorker(hWnd, process, selectedPid, dllPath, settings);
 			return 0;
 		}
 
@@ -749,6 +1118,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			if (wParam == TRUE)
 			{
 				MessageBoxW(hWnd, L"Injection completed successfully.", WINDOW_TITLE, MB_ICONINFORMATION | MB_OK);
+
+				if (IsChecked(state->hCheckAutoExit))
+				{
+					PostMessageW(hWnd, WM_CLOSE, 0, 0);
+				}
 			}
 			else
 			{
@@ -802,8 +1176,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
 		WS_OVERLAPPED | WS_SYSMENU | WS_MINIMIZEBOX | WS_CAPTION,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
-		660,
-		280,
+		940,
+		470,
 		nullptr,
 		nullptr,
 		hInstance,
