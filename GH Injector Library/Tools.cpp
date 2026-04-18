@@ -440,7 +440,7 @@ bool StdWStringToWCharArray(const std::wstring & Source, wchar_t * szBuffer, siz
 	}
 
 	Source.copy(szBuffer, len);
-	szBuffer[len + 1] = '\0';
+	szBuffer[len] = L'\0';
 
 	return true;
 }

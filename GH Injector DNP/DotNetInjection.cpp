@@ -1,11 +1,11 @@
 /*
  * Author:       Broihon
- * Copyright:    Guided Hacking™ © 2012-2023 Guided Hacking LLC
+ * Copyright:    Guided Hackingï¿½ ï¿½ 2012-2023 Guided Hacking LLC
 */
 
 #include "pch.h"
 
-#include "DotNetInjection.h"
+#include "DotNetInjectionDefs.h"
 #include "FindModule.h"
 
 HRESULT LoadDotNetDll(const std::wstring & FilePath, const std::wstring & Version, const std::wstring & TypeName, const std::wstring & MethodName, const std::wstring & Argument, HINSTANCE & ModuleBase, DWORD & ReturnValue);
