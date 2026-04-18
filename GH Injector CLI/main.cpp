@@ -77,6 +77,23 @@ namespace
 		DWORD Value;
 	};
 
+	// The public root Injection.h in this repo has an extra field in INJECTIONDATAW.
+	// The exported InjectW in GH Injector DLL expects this compact layout.
+	struct INJECTIONDATAW_DLL
+	{
+		wchar_t			szDllPath[MAX_PATH * 2];
+		DWORD			ProcessID;
+		INJECTION_MODE	Mode;
+		LAUNCH_METHOD	Method;
+		DWORD			Flags;
+		DWORD			Timeout;
+		DWORD			hHandleValue;
+		HINSTANCE		hDllOut;
+		bool			GenerateErrorLog;
+	};
+
+	using f_InjectW_DLL = DWORD(__stdcall *)(INJECTIONDATAW_DLL * pData);
+
 	struct AppState
 	{
 		HWND hComboProcess = nullptr;
@@ -740,7 +757,7 @@ namespace
 				return;
 			}
 
-			const auto InjectW = reinterpret_cast<f_InjectW>(GetProcAddress(hInjection, "InjectW"));
+			const auto InjectW = reinterpret_cast<f_InjectW_DLL>(GetProcAddress(hInjection, "InjectW"));
 			const auto GetSymbolState = reinterpret_cast<f_GetSymbolState>(GetProcAddress(hInjection, "GetSymbolState"));
 			const auto GetImportState = reinterpret_cast<f_GetImportState>(GetProcAddress(hInjection, "GetImportState"));
 			const auto StartDownload = reinterpret_cast<f_StartDownload>(GetProcAddress(hInjection, "StartDownload"));
@@ -802,7 +819,7 @@ namespace
 				Sleep(settings.DelayMs);
 			}
 
-			INJECTIONDATAW data{};
+			INJECTIONDATAW_DLL data{};
 			wcsncpy_s(data.szDllPath, dllPath.c_str(), _TRUNCATE);
 			data.ProcessID = pid;
 			data.Mode = settings.Mode;
