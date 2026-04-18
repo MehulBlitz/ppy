@@ -510,6 +510,90 @@ namespace
 		SendMessageW(hCheck, BM_SETCHECK, checked ? BST_CHECKED : BST_UNCHECKED, 0);
 	}
 
+	void UpdateUiDependencies(AppState & state)
+	{
+		const auto mode = static_cast<INJECTION_MODE>(GetSelectedComboValue(state.hComboMode, static_cast<DWORD>(INJECTION_MODE::IM_LoadLibraryExW)));
+		const auto method = static_cast<LAUNCH_METHOD>(GetSelectedComboValue(state.hComboMethod, static_cast<DWORD>(LAUNCH_METHOD::LM_NtCreateThreadEx)));
+
+		const bool isManualMap = (mode == INJECTION_MODE::IM_ManualMap);
+		const bool isNtCreateThreadEx = (method == LAUNCH_METHOD::LM_NtCreateThreadEx);
+
+		const BOOL mmEnabled = isManualMap ? TRUE : FALSE;
+
+		EnableWindow(state.hCheckMmRunDllMain, mmEnabled);
+		EnableWindow(state.hCheckMmLdrLock, mmEnabled);
+		EnableWindow(state.hCheckMmResolveImports, mmEnabled);
+		EnableWindow(state.hCheckMmDelayImports, mmEnabled);
+		EnableWindow(state.hCheckMmExecuteTls, mmEnabled);
+		EnableWindow(state.hCheckMmMapMemory, mmEnabled);
+		EnableWindow(state.hCheckMmSetPageProt, mmEnabled);
+		EnableWindow(state.hCheckMmEnableEx, mmEnabled);
+		EnableWindow(state.hCheckMmInitCookie, mmEnabled);
+		EnableWindow(state.hCheckMmCleanDir, mmEnabled);
+		EnableWindow(state.hCheckMmShiftBase, mmEnabled);
+		EnableWindow(state.hCheckMmLinkPeb, mmEnabled);
+
+		if (!isManualMap)
+		{
+			SetChecked(state.hCheckMmRunDllMain, false);
+			SetChecked(state.hCheckMmLdrLock, false);
+			SetChecked(state.hCheckMmResolveImports, false);
+			SetChecked(state.hCheckMmDelayImports, false);
+			SetChecked(state.hCheckMmExecuteTls, false);
+			SetChecked(state.hCheckMmMapMemory, false);
+			SetChecked(state.hCheckMmSetPageProt, false);
+			SetChecked(state.hCheckMmEnableEx, false);
+			SetChecked(state.hCheckMmInitCookie, false);
+			SetChecked(state.hCheckMmCleanDir, false);
+			SetChecked(state.hCheckMmShiftBase, false);
+			SetChecked(state.hCheckMmLinkPeb, false);
+		}
+
+		EnableWindow(state.hCheckCloakThread, isNtCreateThreadEx ? TRUE : FALSE);
+		if (!isNtCreateThreadEx)
+		{
+			SetChecked(state.hCheckCloakThread, false);
+		}
+
+		EnableWindow(state.hCheckUnlinkPeb, isManualMap ? FALSE : TRUE);
+		if (isManualMap)
+		{
+			SetChecked(state.hCheckUnlinkPeb, false);
+		}
+
+		EnableWindow(state.hComboHeader, isManualMap ? FALSE : TRUE);
+		if (isManualMap)
+		{
+			SendMessageW(state.hComboHeader, CB_SETCURSEL, 0, 0);
+		}
+
+		const bool runDllMain = isManualMap && IsChecked(state.hCheckMmRunDllMain);
+		EnableWindow(state.hCheckMmLdrLock, runDllMain ? TRUE : FALSE);
+		if (!runDllMain)
+		{
+			SetChecked(state.hCheckMmLdrLock, false);
+		}
+
+		if (runDllMain)
+		{
+			SetChecked(state.hCheckMmResolveImports, true);
+			EnableWindow(state.hCheckMmResolveImports, FALSE);
+		}
+		else
+		{
+			EnableWindow(state.hCheckMmResolveImports, mmEnabled);
+		}
+
+		const bool setPageProtections = isManualMap && IsChecked(state.hCheckMmSetPageProt);
+		EnableWindow(state.hCheckMmCleanDir, setPageProtections ? FALSE : mmEnabled);
+		EnableWindow(state.hCheckMmShiftBase, setPageProtections ? FALSE : mmEnabled);
+		if (setPageProtections)
+		{
+			SetChecked(state.hCheckMmCleanDir, false);
+			SetChecked(state.hCheckMmShiftBase, false);
+		}
+	}
+
 	DWORD BuildFlagsFromUi(const AppState & state)
 	{
 		DWORD flags = 0;
@@ -951,6 +1035,7 @@ namespace
 		SetChecked(state.hCheckMmSetPageProt, true);
 		SetChecked(state.hCheckMmEnableEx, true);
 		SetChecked(state.hCheckMmInitCookie, true);
+		UpdateUiDependencies(state);
 
 		RefreshProcessCombo(state);
 	}
@@ -982,6 +1067,23 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			if (HIWORD(wParam) == CBN_SELCHANGE)
 			{
 				SetPidEdit(state->hEditPid, GetSelectedComboPid(state->hComboProcess));
+			}
+			return 0;
+
+		case ID_COMBO_MODE:
+		case ID_COMBO_METHOD:
+			if (HIWORD(wParam) == CBN_SELCHANGE)
+			{
+				UpdateUiDependencies(*state);
+			}
+			return 0;
+
+		case ID_CHECK_MM_RUN_DLLMAIN:
+		case ID_CHECK_MM_SET_PAGE_PROT:
+		case ID_CHECK_CLOAK_THREAD:
+			if (HIWORD(wParam) == BN_CLICKED)
+			{
+				UpdateUiDependencies(*state);
 			}
 			return 0;
 
@@ -1113,6 +1215,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			state->Busy = false;
 			EnableActionButtons(*state, true);
+			UpdateUiDependencies(*state);
 
 			const DWORD code = static_cast<DWORD>(lParam);
 			if (wParam == TRUE)
