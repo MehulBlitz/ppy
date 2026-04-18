@@ -1,0 +1,65 @@
+name: Windows MSBuild
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Release]
+        platform: [x64, Win32]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build solution
+        run: msbuild "GH Injector Library.sln" /m /p:Configuration=${{ matrix.configuration }} /p:Platform="${{ matrix.platform }}"
+
+      - name: Collect artifacts
+        id: collect
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $outDir = Join-Path $env:RUNNER_TEMP "artifacts-${{ matrix.platform }}-${{ matrix.configuration }}"
+          New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+
+          $files = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -File |
+            Where-Object {
+              $_.Extension -in '.dll', '.exe', '.lib', '.pdb' -and
+              $_.FullName -notmatch '\\obj\\' -and
+              $_.FullName -notmatch '\\ipch\\' -and
+              $_.FullName -notmatch '\\.git\\'
+            }
+
+          if (-not $files) {
+            throw "No build artifacts found."
+          }
+
+          foreach ($file in $files) {
+            $relative = $file.FullName.Substring($env:GITHUB_WORKSPACE.Length).TrimStart('\\')
+            $destination = Join-Path $outDir $relative
+            New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
+            Copy-Item -Path $file.FullName -Destination $destination -Force
+          }
+
+          "artifact_dir=$outDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: injector-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: ${{ steps.collect.outputs.artifact_dir }}
+          if-no-files-found: error
